@@ -1,0 +1,12 @@
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Datos de la app (respaldos locales, no versionar)
+*.json.orig

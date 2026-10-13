@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inventario | Sistema de Gestión</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        colors: {
+          brand: {
+            50:  '#ecfdf5',
+            100: '#d1fae5',
+            200: '#a7f3d0',
+            300: '#6ee7b7',
+            400: '#34d399',
+            500: '#10b981',
+            600: '#059669',
+            700: '#047857',
+            800: '#065f46',
+            900: '#064e3b',
+          }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .sidebar-link.active { background: rgb(6 95 70 / 1); color: white; }
+  .sidebar-link:not(.active):hover { background: rgb(241 245 249 / 1); }
+  .fade-in { animation: fadeIn .25s ease-out; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(4px);} to { opacity:1; transform:none;} }
+  .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .badge-dot { width:.5rem; height:.5rem; border-radius:9999px; display:inline-block; }
+  .input { @apply w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent; }
+  .btn-primary { @apply inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-semibold rounded-lg hover:bg-brand-700 active:bg-brand-800 transition shadow-sm; }
+  .btn-secondary { @apply inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-50 transition; }
+  .btn-danger { @apply inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition; }
+  .card { @apply bg-white rounded-xl shadow-sm border border-slate-200; }
+  .table th { @apply px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50 border-b border-slate-200; }
+  .table td { @apply px-4 py-3 text-sm text-slate-700 border-b border-slate-100; }
+  .table tr:hover td { background: rgb(248 250 252 / 1); }
+  [data-tooltip] { position: relative; }
+  [data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: #0f172a; color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; white-space: nowrap; z-index: 50;
+  }
+  .empty-state { @apply flex flex-col items-center justify-center py-12 text-slate-400; }
+  .modal-backdrop { background: rgb(15 23 42 / .55); backdrop-filter: blur(2px); }
+  .pulse-dot { animation: pulseDot 1.5s infinite; }
+  @keyframes pulseDot { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+<!-- ============ SIDEBAR ============ -->
+<aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-200 z-30 flex flex-col">
+  <div class="px-5 py-5 border-b border-slate-200">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-sm">
+        <i class="fa-solid fa-boxes-stacked text-white"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-slate-800 text-base leading-tight" id="storeNameSidebar">Mi Negocio</h1>
+        <p class="text-xs text-slate-400">Sistema de gestión</p>
+      </div>
+    </div>
+  </div>
+
+  <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1 scrollbar-thin">
+    <a href="#" data-section="dashboard" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 transition">
+      <i class="fa-solid fa-chart-pie w-5 text-center"></i><span>Dashboard</span>
+    </a>
+    <a href="#" data-section="productos" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 transition">
+      <i class="fa-solid fa-box w-5 text-center"></i><span>Productos</span>
+    </a>
+    <a href="#" data-section="entradas" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 transition">
+      <i class="fa-solid fa-truck-ramp-box w-5 text-center"></i><span>Entradas</span>
+    </a>
+    <a href="#" data-section="salidas" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 transition">
+      <i class="fa-solid fa-cash-register w-5 text-center"></i><span>Salidas</span>
+    </a>
+    <a href="#" data-section="alertas" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 transition relative">
+      <i class="fa-solid fa-triangle-exclamation w-5 text-center"></i><span>Alertas</span>
+      <span id="alertBadge" class="ml-auto bg-amber-500 text-white text-xs font-bold rounded-full px-2 py-0.5 hidden">0</span>
+    </a>
+    <a href="#" data-section="movimientos" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 transition">
+      <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i><span>Movimientos</span>
+    </a>
+    <a href="#" data-section="configuracion" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 transition">
+      <i class="fa-solid fa-gear w-5 text-center"></i><span>Configuración</span>
+    </a>
+  </nav>
+
+  <div class="px-4 py-3 border-t border-slate-200 text-xs text-slate-500">
+    <div class="flex items-center gap-2 mb-1">
+      <span class="w-2 h-2 bg-brand-500 rounded-full pulse-dot"></span>
+      <span>Datos guardados localmente</span>
+    </div>
+    <p id="storageInfo" class="text-[11px] text-slate-400 truncate"></p>
+  </div>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<main class="ml-64 min-h-screen">
+  <!-- Topbar -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-20">
+    <div class="px-6 py-3 flex items-center justify-between">
+      <div>
+        <h2 id="sectionTitle" class="text-lg font-bold text-slate-800">Dashboard</h2>
+        <p id="sectionSubtitle" class="text-xs text-slate-500">Resumen general del inventario</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="exportData()" class="btn-secondary" data-tooltip="Exportar respaldo JSON">
+          <i class="fa-solid fa-download"></i><span class="hidden sm:inline">Exportar</span>
+        </button>
+        <button onclick="document.getElementById('importInput').click()" class="btn-secondary" data-tooltip="Importar respaldo">
+          <i class="fa-solid fa-upload"></i><span class="hidden sm:inline">Importar</span>
+        </button>
+        <input type="file" id="importInput" accept="application/json" class="hidden" onchange="importData(event)">
+      </div>
+    </div>
+  </header>
+
+  <div id="viewContainer" class="p-6 space-y-6"></div>
+</main>
+
+<!-- ============ MODAL ============ -->
+<div id="modal" class="fixed inset-0 z-40 hidden modal-backdrop items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto fade-in scrollbar-thin" id="modalContent"></div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div id="toastContainer" class="fixed bottom-6 right-6 z-50 space-y-2"></div>
+
+<script>
+/* ============================================================
+   INVENTARIO APP — Sistema completo
+   - Persistencia: localStorage
+   - Moneda configurable
+   - Validación de stock en salidas
+   - Alertas automáticas
+   ============================================================ */
+
+const STORAGE_KEY = 'inventoryAppData_v1';
+
+// ---------- Estado ----------
+let state = {
+  storeName: 'Mi Negocio',
+  currency: '$',
+  taxRate: 0,
+  products: [],   // {id, sku, name, category, unit, cost, price, minStock, currentStock, createdAt}
+  movements: []   // {id, type:'entry'|'output', productId, qty, unitPrice, total, party, reference, notes, date}
+};
+
+let currentSection = 'dashboard';
+let currentEditProductId = null;
+
+// ---------- Utilidades ----------
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+const fmt = (n) => `${state.currency}${(Number(n)||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+const fmtNum = (n) => (Number(n)||0).toLocaleString('es-MX',{maximumFractionDigits:2});
+const todayISO = () => new Date().toISOString().slice(0,10);
+const nowISO = () => new Date().toISOString();
+const fmtDate = (iso) => {
+  if(!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+};
+const fmtDateTime = (iso) => {
+  if(!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+};
+
+function toast(msg, type='success'){
+  const colors = {
+    success:'bg-emerald-600',
+    error:'bg-red-600',
+    warning:'bg-amber-500',
+    info:'bg-slate-700'
+  };
+  const icons = {
+    success:'fa-circle-check',
+    error:'fa-circle-xmark',
+    warning:'fa-triangle-exclamation',
+    info:'fa-circle-info'
+  };
+  const el = document.createElement('div');
+  el.className = `${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[260px] fade-in`;
+  el.innerHTML = `<i class="fa-solid ${icons[type]}"></i><span class="text-sm font-medium flex-1">${msg}</span><button onclick="this.parentElement.remove()" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark"></i></button>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(()=> el.remove(), 4000);
+}
+
+// ---------- Persistencia ----------
+function save(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    updateStorageInfo();
+  } catch(e){
+    toast('Error al guardar: ' + e.message, 'error');
+  }
+}
+function load(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      state = { ...state, ...parsed };
+    }
+  } catch(e){
+    console.warn('No se pudieron cargar datos previos', e);
+  }
+}
+function updateStorageInfo(){
+  const bytes = new Blob([JSON.stringify(state)]).size;
+  const kb = (bytes/1024).toFixed(1);
+  document.getElementById('storageInfo').textContent = `${state.products.length} productos · ${state.movements.length} movimientos · ${kb} KB`;
+  document.getElementById('storeNameSidebar').textContent = state.storeName || 'Mi Negocio';
+}
+
+// ---------- Cálculos ----------
+function getCurrentStock(productId){
+  let stock = 0;
+  for(const m of state.movements){
+    if(m.productId !== productId) continue;
+    stock += m.type === 'entry' ? Number(m.qty)||0 : -(Number(m.qty)||0);
+  }
+  return stock;
+}
+function getStockValuation(){
+  return state.products.reduce((s,p) => s + (getCurrentStock(p.id) * (Number(p.cost)||0)), 0);
+}
+function getLowStockProducts(){
+  return state.products.filter(p => getCurrentStock(p.id) <= Number(p.minStock||0) && getCurrentStock(p.id) >= 0)
+    .concat(state.products.filter(p => getCurrentStock(p.id) < 0));
+}
+function getOutOfStock(){
+  return state.products.filter(p => getCurrentStock(p.id) <= 0);
+}
+function getMovementsToday(){
+  const t = todayISO();
+  return state.movements.filter(m => (m.date||'').slice(0,10) === t);
+}
+function getTopSold(limit=5){
+  const counts = {};
+  for(const m of state.movements){
+    if(m.type !== 'output') continue;
+    counts[m.productId] = (counts[m.productId]||0) + Number(m.qty||0);
+  }
+  return Object.entries(counts)
+    .map(([pid, qty]) => ({product: state.products.find(p=>p.id===pid), qty}))
+    .filter(x => x.product)
+    .sort((a,b) => b.qty - a.qty)
+    .slice(0, limit);
+}
+function getLast7DaysData(){
+  const labels = [];
+  const entries = [];
+  const outputs = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const key = d.toISOString().slice(0,10);
+    labels.push(d.toLocaleDateString('es-MX',{weekday:'short'}));
+    const dayM = state.movements.filter(m => (m.date||'').slice(0,10) === key);
+    entries.push(dayM.filter(m=>m.type==='entry').reduce((s,m)=>s+Number(m.qty||0),0));
+    outputs.push(dayM.filter(m=>m.type==='output').reduce((s,m)=>s+Number(m.qty||0),0));
+  }
+  return {labels, entries, outputs};
+}
+
+// ---------- Render: navegación ----------
+function navigate(section){
+  currentSection = section;
+  document.querySelectorAll('.sidebar-link').forEach(l => {
+    l.classList.toggle('active', l.dataset.section === section);
+  });
+  const titles = {
+    dashboard:['Dashboard','Resumen general del inventario'],
+    productos:['Productos','Administra tu catálogo'],
+    entradas:['Entradas','Registro de compras y reabastecimiento'],
+    salidas:['Salidas','Registro de ventas y consumos'],
+    alertas:['Alertas de stock','Productos con existencias bajas'],
+    movimientos:['Movimientos','Historial completo'],
+    configuracion:['Configuración','Ajustes del sistema']
+  };
+  document.getElementById('sectionTitle').textContent = titles[section][0];
+  document.getElementById('sectionSubtitle').textContent = titles[section][1];
+  render();
+}
+
+// ---------- RENDER: VISTAS ----------
+function render(){
+  const c = document.getElementById('viewContainer');
+  switch(currentSection){
+    case 'dashboard':    c.innerHTML = viewDashboard();    bindDashboard();    break;
+    case 'productos':    c.innerHTML = viewProductos();    bindProductos();    break;
+    case 'entradas':     c.innerHTML = viewEntradas();     bindEntradas();     break;
+    case 'salidas':      c.innerHTML = viewSalidas();      bindSalidas();      break;
+    case 'alertas':      c.innerHTML = viewAlertas();      bindAlertas();      break;
+    case 'movimientos':  c.innerHTML = viewMovimientos();  bindMovimientos();  break;
+    case 'configuracion':c.innerHTML = viewConfiguracion();bindConfiguracion();break;
+  }
+  updateAlertBadge();
+}
+
+// ----- DASHBOARD -----
+function viewDashboard(){
+  const totalProducts = state.products.length;
+  const valuation = getStockValuation();
+  const lowCount = getLowStockProducts().length;
+  const todayM = getMovementsToday();
+  const top = getTopSold(5);
+  const last10 = [...state.movements].sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0,8);
+  const chart = getLast7DaysData();
+  const maxVal = Math.max(...chart.entries, ...chart.outputs, 1);
+
+  return `
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    ${statCard('Productos registrados','fa-box','brand-500', totalProducts, `${state.products.filter(p=>getCurrentStock(p.id)>0).length} con stock`)}
+    ${statCard('Valor del inventario','fa-warehouse','blue-500', fmt(valuation), 'Costo × stock actual')}
+    ${statCard('Alertas de stock','fa-triangle-exclamation','amber-500', lowCount, lowCount>0?'Revisar productos':'Todo en orden')}
+    ${statCard('Movimientos hoy','fa-arrows-up-down-left-right','violet-500', todayM.length, `${todayM.filter(m=>m.type==='entry').length} entradas · ${todayM.filter(m=>m.type==='output').length} salidas`)}
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Gráfico -->
+    <div class="card p-5 lg:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-slate-800">Movimientos últimos 7 días</h3>
+        <div class="flex items-center gap-3 text-xs">
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-brand-500"></span>Entradas</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-red-500"></span>Salidas</span>
+        </div>
+      </div>
+      <div class="h-56 flex items-end gap-3 px-2">
+        ${chart.labels.map((lab,i)=>`
+          <div class="flex-1 flex flex-col items-center gap-1">
+            <div class="w-full flex items-end justify-center gap-1 h-44">
+              <div class="w-1/2 bg-brand-500 rounded-t hover:bg-brand-600 transition-all" style="height:${(chart.entries[i]/maxVal)*100}%" data-tooltip="${chart.entries[i]} entradas"></div>
+              <div class="w-1/2 bg-red-500 rounded-t hover:bg-red-600 transition-all" style="height:${(chart.outputs[i]/maxVal)*100}%" data-tooltip="${chart.outputs[i]} salidas"></div>
+            </div>
+            <span class="text-[10px] uppercase font-semibold text-slate-400">${lab}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Top vendidos -->
+    <div class="card p-5">
+      <h3 class="font-bold text-slate-800 mb-3">Top 5 más vendidos</h3>
+      ${top.length === 0 ? `<div class="empty-state"><i class="fa-solid fa-inbox text-3xl mb-2"></i><p class="text-sm">Aún no hay ventas registradas</p></div>` : `
+      <div class="space-y-3">
+        ${top.map((t,i)=>`
+          <div class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">${i+1}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-700 truncate">${escapeHtml(t.product.name)}</p>
+              <p class="text-xs text-slate-400">${fmtNum(t.qty)} ${escapeHtml(t.product.unit||'pza')}</p>
+            </div>
+          </div>
+        `).join('')}
+      </div>`}
+    </div>
+  </div>
+
+  <!-- Movimientos recientes -->
+  <div class="card">
+    <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="font-bold text-slate-800">Movimientos recientes</h3>
+      <button onclick="navigate('movimientos')" class="text-xs font-semibold text-brand-600 hover:text-brand-700">Ver todos <i class="fa-solid fa-arrow-right text-[10px] ml-1"></i></button>
+    </div>
+    ${last10.length === 0 ? `
+      <div class="empty-state">
+        <i class="fa-solid fa-clock-rotate-left text-3xl mb-2"></i>
+        <p class="text-sm">Sin movimientos aún</p>
+        <p class="text-xs">Registra tu primera entrada para comenzar</p>
+      </div>
+    ` : `
+    <div class="overflow-x-auto scrollbar-thin">
+      <table class="table w-full">
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">Total</th></tr></thead>
+        <tbody>
+          ${last10.map(m => {
+            const p = state.products.find(x=>x.id===m.productId);
+            return `<tr>
+                <td class="whitespace-nowrap">${fmtDateTime(m.date)}</td>
+                <td>${m.type==='entry'?'<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 text-xs font-semibold"><i class="fa-solid fa-arrow-down text-[10px]"></i>Entrada</span>':'<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-semibold"><i class="fa-solid fa-arrow-up text-[10px]"></i>Salida</span>'}</td>
+                <td class="font-medium">${p ? escapeHtml(p.name) : '<span class="text-slate-400">Producto eliminado</span>'}</td>
+                <td class="text-right tabular-nums">${fmtNum(m.qty)} ${p ? escapeHtml(p.unit||'pza') : ''}</td>
+                <td class="text-right font-semibold tabular-nums">${fmt(m.total)}</td>
+              </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`}
+  </div>`;
+}
+
+function statCard(key,icon,color,value,sub){
+  return `
+    <div class="card p-5">
+      <div class="flex items-start justify-between mb-3">
+        <span class="w-10 h-10 rounded-lg bg-${color}/10 text-${color} flex items-center justify-center">
+          <i class="fa-solid ${icon}"></i>
+        </span>
+      </div>
+      <p class="text-2xl font-bold text-slate-800 tabular-nums">${value}</p>
+      <p class="text-xs text-slate-500 mt-1">${sub}</p>
+    </div>`;
+}
+
+function bindDashboard(){}
+
+// ----- PRODUCTOS -----
+let productsFilter = { q:'', category:'all' };
+
+function viewProductos(){
+  const categories = ['all', ...new Set(state.products.map(p => p.category).filter(Boolean))];
+  const list = state.products.filter(p => {
+    const q = productsFilter.q.toLowerCase();
+    const matchQ = !q || p.name.toLowerCase().includes(q) || (p.sku||'').toLowerCase().includes(q);
+    const matchC = productsFilter.category === 'all' || p.category === productsFilter.category;
+    return matchQ && matchC;
+  });
+
+  return `
+  <div class="card">
+    <div class="p-5 border-b border-slate-200 flex flex-wrap items-center gap-3 justify-between">
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input id="prodSearch" type="text" placeholder="Buscar por nombre o SKU..." value="${escapeHtml(productsFilter.q)}" class="pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-64">
+        </div>
+        <select id="prodCategory" class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          ${categories.map(c => `<option value="${escapeHtml(c)}" ${productsFilter.category===c?'selected':''}>${c==='all'?'Todas las categorías':escapeHtml(c)}</option>`).join('')}
+        </select>
+      </div>
+      <button onclick="openProductModal()" class="btn-primary"><i class="fa-solid fa-plus"></i>Nuevo producto</button>
+    </div>
+
+    ${list.length === 0 ? `
+      <div class="empty-state py-16">
+        <i class="fa-solid fa-box-open text-5xl mb-3 text-slate-300"></i>
+        <p class="text-base font-medium text-slate-500">No hay productos</p>
+        <p class="text-xs">Comienza registrando tu primer producto</p>
+        <button onclick="openProductModal()" class="btn-primary mt-4"><i class="fa-solid fa-plus"></i>Crear producto</button>
+      </div>
+    ` : `
+    <div class="overflow-x-auto scrollbar-thin">
+      <table class="table w-full">
+        <thead><tr>
+          <th>SKU</th><th>Producto</th><th>Categoría</th>
+          <th class="text-right">Stock</th><th class="text-right">Mín.</th>
+          <th class="text-right">Costo</th><th class="text-right">Precio</th>
+          <th class="text-right">Valor</th><th class="text-right">Acciones</th>
+        </tr></thead>
+        <tbody>
+          ${list.map(p => {
+            const stock = getCurrentStock(p.id);
+            const stockState = stock <= 0 ? 'critical' : stock <= p.minStock ? 'low' : 'ok';
+            const stockBadge = {
+              critical: `<span class="inline-flex items-center gap-1 text-red-700 bg-red-100 px-2 py-0.5 rounded-full text-xs font-semibold"><span class="badge-dot bg-red-500"></span>Sin stock</span>`,
+              low:      `<span class="inline-flex items-center gap-1 text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full text-xs font-semibold"><span class="badge-dot bg-amber-500"></span>Stock bajo</span>`,
+              ok:       `<span class="inline-flex items-center gap-1 text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-xs font-semibold"><span class="badge-dot bg-emerald-500"></span>OK</span>`
+            }[stockState];
+            return `<tr>
+              <td class="font-mono text-xs text-slate-500">${escapeHtml(p.sku||'—')}</td>
+              <td class="font-semibold">${escapeHtml(p.name)}</td>
+              <td>${p.category ? `<span class="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded">${escapeHtml(p.category)}</span>` : '<span class="text-slate-300">—</span>'}</td>
+              <td class="text-right tabular-nums">
+                <div class="flex items-center justify-end gap-2">
+                  <span class="font-semibold ${stock<=0?'text-red-600':stock<=p.minStock?'text-amber-600':'text-slate-800'}">${fmtNum(stock)}</span>
+                  <span class="text-xs text-slate-400">${escapeHtml(p.unit||'pza')}</span>
+                </div>
+                ${stockBadge}
+              </td>
+              <td class="text-right tabular-nums text-slate-500">${fmtNum(p.minStock)}</td>
+              <td class="text-right tabular-nums">${fmt(p.cost)}</td>
+              <td class="text-right tabular-nums">${fmt(p.price)}</td>
+              <td class="text-right tabular-nums font-semibold">${fmt(stock * (Number(p.cost)||0))}</td>
+              <td class="text-right">
+                <button onclick="openProductModal('${p.id}')" class="text-slate-500 hover:text-brand-600 p-1.5" data-tooltip="Editar"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteProduct('${p.id}')" class="text-slate-500 hover:text-red-600 p-1.5" data-tooltip="Eliminar"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`}
+    ${list.length > 0 ? `
+      <div class="px-5 py-3 border-t border-slate-200 text-xs text-slate-500">
+        Mostrando ${list.length} de ${state.products.length} producto${state.products.length!==1?'s':''}
+      </div>` : ''}
+  </div>`;
+}
+
+function bindProductos(){
+  const search = document.getElementById('prodSearch');
+  const cat = document.getElementById('prodCategory');
+  if(search) search.oninput = (e) => { productsFilter.q = e.target.value; render(); setTimeout(()=>{const s=document.getElementById('prodSearch'); if(s){s.focus(); s.setSelectionRange(s.value.length,s.value.length);}},0);};
+  if(cat) cat.onchange = (e) => { productsFilter.category = e.target.value; render(); };
+}
+
+function openProductModal(id=null){
+  currentEditProductId = id;
+  const p = id ? state.products.find(x=>x.id===id) : null;
+  const modal = document.getElementById('modal');
+  document.getElementById('modalContent').innerHTML = `
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-lg font-bold text-slate-800">${p?'Editar producto':'Nuevo producto'}</h3>
+      <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+    <form id="productForm" class="p-6 space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">SKU / Código *</label>
+          <input name="sku" required value="${p?escapeHtml(p.sku||''):''}" placeholder="ej. PROD-001" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
+          <input name="category" list="catList" value="${p?escapeHtml(p.category||''):''}" placeholder="ej. Bebidas" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          <datalist id="catList">
+            ${[...new Set(state.products.map(x=>x.category).filter(Boolean))].map(c=>`<option value="${escapeHtml(c)}">`).join('')}
+          </datalist>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del producto *</label>
+        <input name="name" required value="${p?escapeHtml(p.name):''}" placeholder="ej. Coca-Cola 600ml" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+      </div>
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Unidad</label>
+          <select name="unit" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            ${['pza','kg','g','lt','ml','caja','pack','metro','servicio'].map(u => `<option value="${u}" ${p&&p.unit===u?'selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Costo unitario</label>
+          <input name="cost" type="number" step="0.01" min="0" value="${p?p.cost:''}" placeholder="0.00" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Precio venta</label>
+          <input name="price" type="number" step="0.01" min="0" value="${p?p.price:''}" placeholder="0.00" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Stock mínimo (alerta)</label>
+        <input name="minStock" type="number" step="0.01" min="0" value="${p?p.minStock:5}" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        <p class="text-xs text-slate-400 mt-1">El sistema alertará cuando el stock sea igual o menor a este valor.</p>
+      </div>
+      <div class="flex gap-2 justify-end pt-3 border-t border-slate-200">
+        <button type="button" onclick="closeModal()" class="btn-secondary">Cancelar</button>
+        <button type="submit" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i>${p?'Guardar cambios':'Crear producto'}</button>
+      </div>
+    </form>
+  `;
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.getElementById('productForm').onsubmit = (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const data = {
+      sku: fd.get('sku').trim(),
+      name: fd.get('name').trim(),
+      category: fd.get('category').trim(),
+      unit: fd.get('unit'),
+      cost: Number(fd.get('cost'))||0,
+      price: Number(fd.get('price'))||0,
+      minStock: Number(fd.get('minStock'))||0
+    };
+    if(!data.sku || !data.name){ toast('SKU y nombre son obligatorios','error'); return; }
+    if(p){
+      Object.assign(p, data);
+      toast('Producto actualizado');
+    } else {
+      state.products.push({ id: uid(), ...data, createdAt: nowISO() });
+      toast('Producto creado');
+    }
+    save();
+    closeModal();
+    render();
+  };
+}
+
+function deleteProduct(id){
+  const p = state.products.find(x=>x.id===id);
+  if(!p) return;
+  const hasMov = state.movements.some(m => m.productId === id);
+  const msg = hasMov
+    ? `“${p.name}” tiene movimientos registrados. Si lo eliminas también se eliminarán sus movimientos.\n\n¿Continuar?`
+    : `¿Eliminar el producto “${p.name}”?`;
+  if(!confirm(msg)) return;
+  state.products = state.products.filter(x=>x.id!==id);
+  state.movements = state.movements.filter(m => m.productId !== id);
+  save();
+  toast('Producto eliminado', hasMov?'warning':'info');
+  render();
+}
+
+// ----- ENTRADAS -----
+function viewEntradas(){
+  const entries = state.movements.filter(m => m.type==='entry').sort((a,b)=> new Date(b.date)-new Date(a.date));
+  return `
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="card p-5 lg:col-span-1 h-fit">
+      <h3 class="font-bold text-slate-800 mb-1">Registrar entrada</h3>
+      <p class="text-xs text-slate-500 mb-4">Compra o reabastecimiento de producto</p>
+      <form id="entryForm" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Producto *</label>
+          <select name="productId" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <option value="">— Selecciona —</option>
+            ${state.products.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (${escapeHtml(p.sku||'')})</option>`).join('')}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Cantidad *</label>
+            <input name="qty" type="number" step="0.01" min="0.01" required placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Costo unitario *</label>
+            <input name="unitPrice" type="number" step="0.01" min="0" required placeholder="0.00" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Proveedor</label>
+          <input name="party" placeholder="ej. Distribuidora XYZ" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nº Factura / Referencia</label>
+          <input name="reference" placeholder="ej. F-12345" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Notas</label>
+          <textarea name="notes" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+        </div>
+        <div class="pt-2 border-t border-slate-200 flex items-center justify-between">
+          <div>
+            <p class="text-xs text-slate-500">Total</p>
+            <p id="entryTotal" class="text-lg font-bold text-brand-700">${state.currency}0.00</p>
+          </div>
+          <button type="submit" class="btn-primary"><i class="fa-solid fa-truck-ramp-box"></i>Registrar entrada</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card lg:col-span-2">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 class="font-bold text-slate-800">Historial de entradas</h3>
+        <span class="text-xs text-slate-500">${entries.length} registros</span>
+      </div>
+      ${entries.length === 0 ? `<div class="empty-state"><i class="fa-solid fa-truck text-3xl mb-2"></i><p class="text-sm">Sin entradas registradas</p></div>` : `
+      <div class="overflow-x-auto scrollbar-thin max-h-[600px]">
+        <table class="table w-full">
+          <thead><tr><th>Fecha</th><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">Costo</th><th class="text-right">Total</th><th>Proveedor</th></tr></thead>
+          <tbody>
+            ${entries.slice(0,50).map(m => {
+              const p = state.products.find(x=>x.id===m.productId);
+              return `<tr>
+                <td class="whitespace-nowrap text-xs">${fmtDateTime(m.date)}</td>
+                <td class="font-medium">${p?escapeHtml(p.name):'<span class="text-slate-400">Eliminado</span>'}</td>
+                <td class="text-right tabular-nums">${fmtNum(m.qty)} ${p?escapeHtml(p.unit||'pza'):''}</td>
+                <td class="text-right tabular-nums">${fmt(m.unitPrice)}</td>
+                <td class="text-right font-semibold tabular-nums">${fmt(m.total)}</td>
+                <td class="text-xs text-slate-500">${escapeHtml(m.party||'—')}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`}
+    </div>
+  </div>`;
+}
+
+function bindEntradas(){
+  const form = document.getElementById('entryForm');
+  if(!form) return;
+  const calc = () => {
+    const qty = Number(form.qty.value)||0;
+    const up = Number(form.unitPrice.value)||0;
+    document.getElementById('entryTotal').textContent = fmt(qty*up);
+  };
+  form.qty.oninput = calc;
+  form.unitPrice.oninput = calc;
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const productId = fd.get('productId');
+    const qty = Number(fd.get('qty'));
+    const unitPrice = Number(fd.get('unitPrice'));
+    if(!productId){ toast('Selecciona un producto','error'); return; }
+    if(qty <= 0){ toast('La cantidad debe ser mayor a cero','error'); return; }
+    if(unitPrice < 0){ toast('El costo no puede ser negativo','error'); return; }
+    state.movements.push({
+      id: uid(), type:'entry', productId, qty, unitPrice,
+      total: qty*unitPrice,
+      party: fd.get('party').trim(),
+      reference: fd.get('reference').trim(),
+      notes: fd.get('notes').trim(),
+      date: nowISO()
+    });
+    save();
+    toast(`Entrada registrada: +${fmtNum(qty)} unidades`);
+    render();
+  };
+}
+
+// ----- SALIDAS (con validación de stock) -----
+function viewSalidas(){
+  const outputs = state.movements.filter(m => m.type==='output').sort((a,b)=> new Date(b.date)-new Date(a.date));
+  return `
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="card p-5 lg:col-span-1 h-fit">
+      <h3 class="font-bold text-slate-800 mb-1">Registrar salida</h3>
+      <p class="text-xs text-slate-500 mb-4">Venta o consumo interno</p>
+      <form id="outputForm" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Producto *</label>
+          <select name="productId" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <option value="">— Selecciona —</option>
+            ${state.products.map(p => {
+              const stock = getCurrentStock(p.id);
+              return `<option value="${p.id}" data-stock="${stock}" data-unit="${escapeHtml(p.unit||'pza')}" data-price="${p.price}">${escapeHtml(p.name)} · Stock: ${fmtNum(stock)} ${escapeHtml(p.unit||'pza')}</option>`;
+            }).join('')}
+          </select>
+        </div>
+        <div id="stockInfo" class="hidden px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-600">Stock disponible:</span>
+            <span id="stockAvailable" class="font-bold text-emerald-600"></span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Cantidad *</label>
+            <input name="qty" type="number" step="0.01" min="0.01" required placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Precio unitario *</label>
+            <input name="unitPrice" type="number" step="0.01" min="0" required placeholder="0.00" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+        </div>
+        <div id="stockWarning" class="hidden px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center gap-2">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span id="stockWarningText"></span>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Cliente / Destino</label>
+          <input name="party" placeholder="ej. Mostrador, Cliente X" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo</label>
+          <select name="reference" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <option value="Venta">Venta</option>
+            <option value="Consumo interno">Consumo interno</option>
+            <option value="Merma">Merma</option>
+            <option value="Devolución">Devolución</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Notas</label>
+          <textarea name="notes" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+        </div>
+        <div class="pt-2 border-t border-slate-200 flex items-center justify-between">
+          <div>
+            <p class="text-xs text-slate-500">Total</p>
+            <p id="outputTotal" class="text-lg font-bold text-slate-800">${state.currency}0.00</p>
+          </div>
+          <button type="submit" id="outputSubmit" class="btn-primary"><i class="fa-solid fa-cash-register"></i>Registrar salida</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card lg:col-span-2">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 class="font-bold text-slate-800">Historial de salidas</h3>
+        <span class="text-xs text-slate-500">${outputs.length} registros</span>
+      </div>
+      ${outputs.length === 0 ? `<div class="empty-state"><i class="fa-solid fa-cash-register text-3xl mb-2"></i><p class="text-sm">Sin ventas registradas</p></div>` : `
+      <div class="overflow-x-auto scrollbar-thin max-h-[600px]">
+        <table class="table w-full">
+          <thead><tr><th>Fecha</th><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">Precio</th><th class="text-right">Total</th><th>Tipo</th></tr></thead>
+          <tbody>
+            ${outputs.slice(0,50).map(m => {
+              const p = state.products.find(x=>x.id===m.productId);
+              return `<tr>
+                <td class="whitespace-nowrap text-xs">${fmtDateTime(m.date)}</td>
+                <td class="font-medium">${p?escapeHtml(p.name):'<span class="text-slate-400">Eliminado</span>'}</td>
+                <td class="text-right tabular-nums">${fmtNum(m.qty)} ${p?escapeHtml(p.unit||'pza'):''}</td>
+                <td class="text-right tabular-nums">${fmt(m.unitPrice)}</td>
+                <td class="text-right font-semibold tabular-nums text-emerald-700">${fmt(m.total)}</td>
+                <td><span class="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded">${escapeHtml(m.reference||'Venta')}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`}
+    </div>
+  </div>`;
+}
+
+function bindSalidas(){
+  const form = document.getElementById('outputForm');
+  if(!form) return;
+  const productSelect = form.productId;
+  const qtyInput = form.qty;
+  const priceInput = form.unitPrice;
+  const stockInfo = document.getElementById('stockInfo');
+  const stockAvailable = document.getElementById('stockAvailable');
+  const warning = document.getElementById('stockWarning');
+  const warningText = document.getElementById('stockWarningText');
+  const submitBtn = document.getElementById('outputSubmit');
+
+  const validate = () => {
+    const opt = productSelect.options[productSelect.selectedIndex];
+    const stock = opt && opt.dataset.stock !== undefined ? Number(opt.dataset.stock) : null;
+    const unit = opt?.dataset.unit || 'pza';
+    const defaultPrice = opt?.dataset.price || '';
+    if(stock !== null && productSelect.value){
+      stockInfo.classList.remove('hidden');
+      stockAvailable.textContent = `${fmtNum(stock)} ${unit}`;
+      stockAvailable.className = `font-bold ${stock<=0?'text-red-600':'text-emerald-600'}`;
+      if(!priceInput.value && defaultPrice) priceInput.value = defaultPrice;
+    } else {
+      stockInfo.classList.add('hidden');
+    }
+    const qty = Number(qtyInput.value)||0;
+    const up = Number(priceInput.value)||0;
+    document.getElementById('outputTotal').textContent = fmt(qty*up);
+    if(stock !== null && qty > stock){
+      warning.classList.remove('hidden');
+      warningText.textContent = `Stock insuficiente. Disponible: ${fmtNum(stock)} ${unit}. No se puede registrar la salida.`;
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50','cursor-not-allowed');
+    } else if(stock === 0){
+      warning.classList.remove('hidden');
+      warningText.textContent = `Este producto no tiene stock disponible. Registra una entrada primero.`;
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50','cursor-not-allowed');
+    } else {
+      warning.classList.add('hidden');
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-50','cursor-not-allowed');
+    }
+  };
+  productSelect.onchange = validate;
+  qtyInput.oninput = validate;
+  priceInput.oninput = validate;
+
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const productId = fd.get('productId');
+    const qty = Number(fd.get('qty'));
+    const unitPrice = Number(fd.get('unitPrice'));
+    if(!productId){ toast('Selecciona un producto','error'); return; }
+    if(qty <= 0){ toast('La cantidad debe ser mayor a cero','error'); return; }
+    const stock = getCurrentStock(productId);
+    if(qty > stock){
+      toast(`Stock insuficiente. Disponible: ${fmtNum(stock)}`,'error');
+      return;
+    }
+    if(stock === 0){
+      toast('Sin stock disponible. Registra una entrada primero.','error');
+      return;
+    }
+    state.movements.push({
+      id: uid(), type:'output', productId, qty, unitPrice,
+      total: qty*unitPrice,
+      party: fd.get('party').trim(),
+      reference: fd.get('reference'),
+      notes: fd.get('notes').trim(),
+      date: nowISO()
+    });
+    save();
+    toast(`Venta registrada: −${fmtNum(qty)} unidades · ${fmt(qty*unitPrice)}`,'success');
+    render();
+  };
+}
+
+// ----- ALERTAS -----
+function viewAlertas(){
+  const low = getLowStockProducts();
+  const out = getOutOfStock();
+  const reorderSuggestions = low.map(p => {
+    const stock = getCurrentStock(p.id);
+    const target = Math.max(Number(p.minStock)*2, 10);
+    return { ...p, stock, toOrder: Math.max(0, target - stock), target };
+  }).sort((a,b)=> a.stock - b.stock);
+
+  return `
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="card p-5 border-l-4 border-red-500">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-sm font-semibold text-slate-600">Sin stock</p>
+        <i class="fa-solid fa-circle-xmark text-red-500"></i>
+      </div>
+      <p class="text-3xl font-bold text-red-600">${out.length}</p>
+      <p class="text-xs text-slate-500 mt-1">No se pueden vender</p>
+    </div>
+    <div class="card p-5 border-l-4 border-amber-500">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-sm font-semibold text-slate-600">Stock bajo</p>
+        <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+      </div>
+      <p class="text-3xl font-bold text-amber-600">${low.filter(p=>getCurrentStock(p.id)>0).length}</p>
+      <p class="text-xs text-slate-500 mt-1">Por debajo del mínimo</p>
+    </div>
+    <div class="card p-5 border-l-4 border-brand-500">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-sm font-semibold text-slate-600">Sugeridos para pedido</p>
+        <i class="fa-solid fa-cart-shopping text-brand-500"></i>
+      </div>
+      <p class="text-3xl font-bold text-brand-600">${reorderSuggestions.length}</p>
+      <p class="text-xs text-slate-500 mt-1">Reabastecer pronto</p>
+    </div>
+  </div>
+
+  ${reorderSuggestions.length === 0 ? `
+    <div class="card p-12 text-center">
+      <i class="fa-solid fa-circle-check text-5xl text-brand-500 mb-3"></i>
+      <p class="text-lg font-bold text-slate-700">¡Todo en orden!</p>
+      <p class="text-sm text-slate-500">Todos tus productos tienen stock suficiente.</p>
+    </div>
+  ` : `
+  <div class="card">
+    <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="font-bold text-slate-800">Productos que requieren reabastecimiento</h3>
+      <span class="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">${reorderSuggestions.length}</span>
+    </div>
+    <div class="overflow-x-auto scrollbar-thin">
+      <table class="table w-full">
+        <thead><tr>
+          <th>Estado</th><th>Producto</th>
+          <th class="text-right">Stock actual</th><th class="text-right">Mínimo</th>
+          <th class="text-right">Sugerido pedir</th><th class="text-right">Costo estimado</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+          ${reorderSuggestions.map(p => {
+            const isOut = p.stock <= 0;
+            return `<tr>
+              <td>${isOut ? '<span class="inline-flex items-center gap-1 text-red-700 bg-red-100 px-2 py-0.5 rounded-full text-xs font-semibold"><span class="badge-dot bg-red-500"></span>Sin stock</span>' : '<span class="inline-flex items-center gap-1 text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full text-xs font-semibold"><span class="badge-dot bg-amber-500"></span>Bajo</span>'}</td>
+              <td class="font-semibold">${escapeHtml(p.name)} <span class="text-xs text-slate-400 font-mono">${escapeHtml(p.sku||'')}</span></td>
+              <td class="text-right tabular-nums font-bold ${isOut?'text-red-600':'text-amber-600'}">${fmtNum(p.stock)} ${escapeHtml(p.unit||'pza')}</td>
+              <td class="text-right tabular-nums text-slate-500">${fmtNum(p.minStock)}</td>
+              <td class="text-right tabular-nums font-semibold text-brand-700">${fmtNum(p.toOrder)}</td>
+              <td class="text-right tabular-nums">${fmt(p.toOrder * (Number(p.cost)||0))}</td>
+              <td><button onclick="quickEntry('${p.id}',${p.toOrder})" class="btn-secondary text-xs"><i class="fa-solid fa-plus"></i>Crear entrada</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`}`;
+}
+
+function bindAlertas(){}
+
+function quickEntry(productId, qty){
+  const p = state.products.find(x=>x.id===productId);
+  if(!p) return;
+  state.movements.unshift({
+    id: uid(), type:'entry', productId, qty, unitPrice: Number(p.cost)||0,
+    total: qty * (Number(p.cost)||0),
+    party: '', reference: 'Pedido sugerido',
+    notes: 'Entrada rápida generada desde alertas',
+    date: nowISO()
+  });
+  save();
+  toast(`Entrada rápida: +${fmtNum(qty)} ${escapeHtml(p.unit||'pza')} de ${p.name}`,'success');
+  navigate('entradas');
+}
+
+// ----- MOVIMIENTOS -----
+let movFilter = { from:'', to:'', type:'all', productId:'all' };
+
+function viewMovimientos(){
+  const filtered = state.movements.filter(m => {
+    const d = (m.date||'').slice(0,10);
+    if(movFilter.from && d < movFilter.from) return false;
+    if(movFilter.to && d > movFilter.to) return false;
+    if(movFilter.type !== 'all' && m.type !== movFilter.type) return false;
+    if(movFilter.productId !== 'all' && m.productId !== movFilter.productId) return false;
+    return true;
+  }).sort((a,b)=> new Date(b.date)-new Date(a.date));
+
+  const totalEntries = filtered.filter(m=>m.type==='entry').reduce((s,m)=>s+m.total,0);
+  const totalOutputs = filtered.filter(m=>m.type==='output').reduce((s,m)=>s+m.total,0);
+
+  return `
+  <div class="card">
+    <div class="p-5 border-b border-slate-200">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Desde</label>
+          <input type="date" id="movFrom" value="${movFilter.from}" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Hasta</label>
+          <input type="date" id="movTo" value="${movFilter.to}" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo</label>
+          <select id="movType" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <option value="all" ${movFilter.type==='all'?'selected':''}>Todos</option>
+            <option value="entry" ${movFilter.type==='entry'?'selected':''}>Entradas</option>
+            <option value="output" ${movFilter.type==='output'?'selected':''}>Salidas</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Producto</label>
+          <select id="movProduct" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <option value="all">Todos</option>
+            ${state.products.map(p => `<option value="${p.id}" ${movFilter.productId===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button onclick="resetMovFilter()" class="btn-secondary w-full"><i class="fa-solid fa-filter-circle-xmark"></i>Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 grid grid-cols-3 gap-4">
+      <div><p class="text-xs text-slate-500">Movimientos</p><p class="text-lg font-bold">${filtered.length}</p></div>
+      <div><p class="text-xs text-slate-500">Total entradas</p><p class="text-lg font-bold text-brand-700">${fmt(totalEntries)}</p></div>
+      <div><p class="text-xs text-slate-500">Total salidas</p><p class="text-lg font-bold text-red-600">${fmt(totalOutputs)}</p></div>
+    </div>
+
+    ${filtered.length === 0 ? `<div class="empty-state"><i class="fa-solid fa-clock-rotate-left text-3xl mb-2"></i><p class="text-sm">Sin movimientos en el rango seleccionado</p></div>` : `
+    <div class="overflow-x-auto scrollbar-thin max-h-[600px]">
+      <table class="table w-full">
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">Precio</th><th class="text-right">Total</th><th>Referencia</th></tr></thead>
+        <tbody>
+          ${filtered.map(m => {
+            const p = state.products.find(x=>x.id===m.productId);
+            return `<tr>
+              <td class="whitespace-nowrap text-xs">${fmtDateTime(m.date)}</td>
+              <td>${m.type==='entry'?'<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 text-xs font-semibold"><i class="fa-solid fa-arrow-down text-[10px]"></i>Entrada</span>':'<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-semibold"><i class="fa-solid fa-arrow-up text-[10px]"></i>Salida</span>'}</td>
+              <td class="font-medium">${p?escapeHtml(p.name):'<span class="text-slate-400">Eliminado</span>'}</td>
+              <td class="text-right tabular-nums">${fmtNum(m.qty)} ${p?escapeHtml(p.unit||'pza'):''}</td>
+              <td class="text-right tabular-nums">${fmt(m.unitPrice)}</td>
+              <td class="text-right font-semibold tabular-nums">${fmt(m.total)}</td>
+              <td class="text-xs text-slate-500">${escapeHtml(m.reference||'—')}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`}
+  </div>`;
+}
+
+function bindMovimientos(){
+  ['movFrom','movTo','movType','movProduct'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.onchange = () => {
+      movFilter.from = document.getElementById('movFrom').value;
+      movFilter.to = document.getElementById('movTo').value;
+      movFilter.type = document.getElementById('movType').value;
+      movFilter.productId = document.getElementById('movProduct').value;
+      render();
+    };
+  });
+}
+
+function resetMovFilter(){
+  movFilter = { from:'', to:'', type:'all', productId:'all' };
+  render();
+}
+
+// ----- CONFIGURACIÓN -----
+function viewConfiguracion(){
+  return `
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card p-6">
+      <h3 class="font-bold text-slate-800 mb-1">Datos del negocio</h3>
+      <p class="text-xs text-slate-500 mb-4">Información general de tu tienda</p>
+      <form id="configForm" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del negocio</label>
+          <input name="storeName" value="${escapeHtml(state.storeName)}" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Símbolo de moneda</label>
+            <input name="currency" value="${escapeHtml(state.currency)}" maxlength="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">% Impuesto (referencia)</label>
+            <input name="taxRate" type="number" step="0.01" min="0" value="${state.taxRate}" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+        </div>
+        <button type="submit" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i>Guardar</button>
+      </form>
+    </div>
+
+    <div class="card p-6">
+      <h3 class="font-bold text-slate-800 mb-1">Respaldo de datos</h3>
+      <p class="text-xs text-slate-500 mb-4">Descarga o restaura toda tu información</p>
+      <div class="space-y-2">
+        <button onclick="exportData()" class="btn-secondary w-full justify-center"><i class="fa-solid fa-download"></i>Exportar respaldo JSON</button>
+        <button onclick="document.getElementById('importInput').click()" class="btn-secondary w-full justify-center"><i class="fa-solid fa-upload"></i>Importar respaldo</button>
+      </div>
+      <div class="mt-6 pt-4 border-t border-slate-200">
+        <h4 class="font-semibold text-red-700 text-sm mb-1">Zona peligrosa</h4>
+        <p class="text-xs text-slate-500 mb-3">Esta acción no se puede deshacer.</p>
+        <button onclick="clearAll()" class="btn-danger w-full justify-center"><i class="fa-solid fa-trash"></i>Borrar todos los datos</button>
+      </div>
+    </div>
+
+    <div class="card p-6 lg:col-span-2">
+      <h3 class="font-bold text-slate-800 mb-1">Cargar datos de ejemplo</h3>
+      <p class="text-xs text-slate-500 mb-4">Empieza rápido con productos y movimientos de muestra</p>
+      <button onclick="loadDemoData()" class="btn-secondary"><i class="fa-solid fa-wand-magic-sparkles"></i>Cargar datos de demostración</button>
+    </div>
+  </div>`;
+}
+
+function bindConfiguracion(){
+  const form = document.getElementById('configForm');
+  if(form) form.onsubmit = (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    state.storeName = fd.get('storeName').trim() || 'Mi Negocio';
+    state.currency = fd.get('currency').trim() || '$';
+    state.taxRate = Number(fd.get('taxRate'))||0;
+    save();
+    toast('Configuración guardada');
+    updateStorageInfo();
+  };
+}
+
+function clearAll(){
+  if(!confirm('¿Borrar TODOS los productos y movimientos? Esta acción no se puede deshacer.')) return;
+  if(!confirm('¿Estás completamente seguro? Considera exportar un respaldo antes.')) return;
+  state.products = [];
+  state.movements = [];
+  save();
+  toast('Todos los datos fueron eliminados','warning');
+  render();
+}
+
+function importData(){
+  // re-bound by inline html
+}
+
+// ---------- Modal helpers ----------
+function closeModal(){
+  const m = document.getElementById('modal');
+  m.classList.add('hidden');
+  m.classList.remove('flex');
+  currentEditProductId = null;
+}
+
+// ---------- Import / Export ----------
+function exportData(){
+  const dataStr = JSON.stringify(state, null, 2);
+  const blob = new Blob([dataStr], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `inventario-respaldo-${todayISO()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Respaldo descargado');
+}
+
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed.products || !parsed.movements) throw new Error('Archivo inválido');
+      if(!confirm(`Se importarán ${parsed.products.length} productos y ${parsed.movements.length} movimientos. Esto reemplazará los datos actuales. ¿Continuar?`)) return;
+      state = { ...state, ...parsed };
+      save();
+      toast('Datos importados correctamente','success');
+      render();
+    } catch(err){
+      toast('Error al importar: ' + err.message,'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ---------- Demo data ----------
+function loadDemoData(){
+  if(state.products.length > 0 && !confirm('Ya tienes productos. ¿Reemplazar con datos de demostración?')) return;
+  const demo = [
+    { sku:'BEB-001', name:'Coca-Cola 600ml', category:'Bebidas', unit:'pza', cost:12, price:18, minStock:10 },
+    { sku:'BEB-002', name:'Agua mineral 1L', category:'Bebidas', unit:'pza', cost:8, price:15, minStock:15 },
+    { sku:'PAN-001', name:'Pan de caja integral', category:'Panadería', unit:'pza', cost:28, price:45, minStock:8 },
+    { sku:'LAC-001', name:'Leche entera 1L', category:'Lácteos', unit:'pza', cost:22, price:32, minStock:12 },
+    { sku:'SNK-001', name:'Papas fritas 150g', category:'Botanas', unit:'pza', cost:10, price:18, minStock:20 },
+    { sku:'LIM-001', name:'Detergente 1kg', category:'Limpieza', unit:'pza', cost:35, price:55, minStock:5 },
+    { sku:'FRU-001', name:'Manzana (kg)', category:'Frutas', unit:'kg', cost:25, price:40, minStock:5 },
+  ];
+  state.products = demo.map(d => ({ id: uid(), ...d, createdAt: nowISO() }));
+  // movimientos demo
+  const movs = [];
+  // entradas iniciales
+  state.products.forEach(p => {
+    movs.push({ id: uid(), type:'entry', productId:p.id, qty:50, unitPrice:p.cost, total:50*p.cost, party:'Distribuidora inicial', reference:'INV-001', notes:'Inventario inicial', date:nowISO() });
+  });
+  // algunas salidas
+  const sampleOut = [
+    {idx:0, qty:5},{idx:0, qty:3},{idx:2, qty:2},{idx:4, qty:7},{idx:1, qty:4},
+    {idx:3, qty:6},{idx:5, qty:1},{idx:6, qty:3},{idx:4, qty:4},{idx:2, qty:1}
+  ];
+  sampleOut.forEach((o, i) => {
+    const p = state.products[o.idx];
+    const d = new Date(); d.setDate(d.getDate()-i);
+    movs.push({ id: uid(), type:'output', productId:p.id, qty:o.qty, unitPrice:p.price, total:o.qty*p.price, party:'Mostrador', reference:'Venta', notes:'', date: d.toISOString() });
+  });
+  state.movements = movs;
+  save();
+  toast('Datos de demostración cargados','success');
+  render();
+}
+
+// ---------- Util: escape HTML ----------
+function escapeHtml(s){
+  if(s === undefined || s === null) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+// ---------- Badge de alertas en sidebar ----------
+function updateAlertBadge(){
+  const badge = document.getElementById('alertBadge');
+  const count = getLowStockProducts().length;
+  if(count > 0){
+    badge.textContent = count;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+// ---------- INIT ----------
+document.addEventListener('DOMContentLoaded', () => {
+  load();
+  document.querySelectorAll('.sidebar-link').forEach(l => {
+    l.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigate(l.dataset.section);
+    });
+  });
+  document.getElementById('modal').addEventListener('click', (e) => {
+    if(e.target.id === 'modal') closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') closeModal();
+  });
+  navigate('dashboard');
+  updateStorageInfo();
+  if(state.products.length === 0){
+    setTimeout(() => {
+      if(confirm('¡Bienvenido! ¿Quieres cargar datos de demostración para empezar rápidamente?')){
+        loadDemoData();
+      }
+    }, 400);
+  }
+});
+</script>
+</body>
+</html>
